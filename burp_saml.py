@@ -28,7 +28,6 @@ class BurpExtender(IBurpExtender, ITab):
         print "http://rewtdance.blogspot.co.uk"
         print "http://github.com/Meatballs1/burp_saml"
         
-    
         # keep a reference to our callbacks object
         self._callbacks = callbacks
         
@@ -88,7 +87,6 @@ class BurpExtender(IBurpExtender, ITab):
     def encode(self, button):
         msg = self._jTextOut.getText()
         stripped = re.sub(r'\n|\t', '', msg)
-        print stripped
         zlibbed = zlib.compress(stripped)[2:-4]
         b64encoded = base64.b64encode(zlibbed)
         urlencoded = self._helpers.urlEncode(b64encoded)
