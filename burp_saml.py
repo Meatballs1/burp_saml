@@ -1,22 +1,21 @@
 ##
-# js-beautifier BurpSuite Extension
+# SAML BurpSuite Extension
 # Ben Campbell <eat_meatballs[at]hotmail.co.uk>
 # http://rewtdance.blogspot.co.uk
-# http://github.com/Meatballs1/burp_jsbeautifier
+# http://github.com/Meatballs1/burp_saml
 #
-# Place the jsbeautifier python folder in the burpsuite/lib/ folder.
 # Load extension in the Extender tab.
 #
-# Tested in Burpsuite Pro v1.5.11 with js-beautify v1.3.2
-# http://jsbeautifier.org/
+# Tested in Burpsuite Pro v1.5.14
 ##
 
 from burp import IBurpExtender
 from burp import IBurpExtenderCallbacks
 from burp import ITab
-from javax import swing
-import zlib, base64
 
+from javax import swing
+
+import zlib, base64, re, xml.dom.minidom
 
 class BurpExtender(IBurpExtender, ITab):
     
@@ -24,10 +23,10 @@ class BurpExtender(IBurpExtender, ITab):
     # implement IBurpExtender
     #
     def	registerExtenderCallbacks(self, callbacks):
-        print "js-beautifier BurpSuite Extension"
+        print "SAML BurpSuite Extension"
         print "Ben Campbell <eat_meatballs[at]hotmail.co.uk>"
         print "http://rewtdance.blogspot.co.uk"
-        print "http://github.com/Meatballs1/burp_jsbeautifier"
+        print "http://github.com/Meatballs1/burp_saml"
         
     
         # keep a reference to our callbacks object
@@ -41,13 +40,19 @@ class BurpExtender(IBurpExtender, ITab):
 
         # Create Tab
         self._jPanel = swing.JPanel()
+        self._jPanel.setLayout(swing.BoxLayout(self._jPanel, swing.BoxLayout.Y_AXIS))
         self._jTextIn = swing.JTextArea("in", 20,120)
         self._jTextIn.setLineWrap(True)
         self._jTextOut = swing.JTextArea("out", 20,120)
         self._jTextOut.setLineWrap(True)
-        self._Button = swing.JButton('Decode', actionPerformed=self.decode)
+
+        self._jButtonPanel = swing.JPanel()
+        self._jButtonEncode = swing.JButton('Encode', actionPerformed=self.encode)
+        self._jButtonDecode = swing.JButton('Decode', actionPerformed=self.decode)
+        self._jButtonPanel.add(self._jButtonEncode)
+        self._jButtonPanel.add(self._jButtonDecode)
         self._jPanel.add(self._jTextIn)
-        self._jPanel.add(self._Button)
+        self._jPanel.add(self._jButtonPanel)
         self._jPanel.add(self._jTextOut)
         callbacks.customizeUiComponent(self._jPanel)
 
@@ -67,13 +72,27 @@ class BurpExtender(IBurpExtender, ITab):
     def getUiComponent(self):
         return self._jPanel
 
-#http://stackoverflow.com/questions/1089662/python-inflate-and-deflate-implementations
+    # http://stackoverflow.com/questions/1089662/python-inflate-and-deflate-implementations
     def decode(self, button):
         msg = self._jTextIn.getText()
         urldecoded = self._helpers.urlDecode(msg)
         b64decoded = base64.b64decode(urldecoded)
         decompressed = zlib.decompress(b64decoded, -15)
+        x = xml.dom.minidom.parseString(decompressed)
+        xml_pretty = x.toprettyxml(indent='\t')
         if decompressed is None:
             self._jTextOut.setText("Invalid input")
         else:
-            self._jTextOut.setText(decompressed)
+            self._jTextOut.setText(str(xml_pretty))
+
+    def encode(self, button):
+        msg = self._jTextOut.getText()
+        stripped = re.sub(r'\n|\t', '', msg)
+        print stripped
+        zlibbed = zlib.compress(stripped)[2:-4]
+        b64encoded = base64.b64encode(zlibbed)
+        urlencoded = self._helpers.urlEncode(b64encoded)
+        if urlencoded is None:
+            self._jTextIn.setText("Invalid input")
+        else:
+            self._jTextIn.setText(urlencoded)
