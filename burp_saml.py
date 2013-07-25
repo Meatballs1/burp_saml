@@ -15,7 +15,7 @@ from burp import ITab
 
 from javax import swing
 
-import zlib, base64, re, xml.dom.minidom
+import zlib, base64, re, xml.dom.minidom, struct, binascii
 
 class BurpExtender(IBurpExtender, ITab):
     
@@ -40,11 +40,12 @@ class BurpExtender(IBurpExtender, ITab):
         # Create Tab
         self._jPanel = swing.JPanel()
         self._jPanel.setLayout(swing.BoxLayout(self._jPanel, swing.BoxLayout.Y_AXIS))
-        self._jTextIn = swing.JTextArea("in", 20,120)
-        self._jTextIn.setLineWrap(True)
-        self._jTextOut = swing.JTextArea("out", 20,120)
-        self._jTextOut.setLineWrap(True)
 
+        # SAML Binding Format
+        self._jTextIn = swing.JTextArea("SAML Binding In", 20,120)
+        self._jTextIn.setLineWrap(True)
+        self._jTextOut = swing.JTextArea("SAML Binding Out", 20,120)
+        self._jTextOut.setLineWrap(True)
         self._jButtonPanel = swing.JPanel()
         self._jButtonEncode = swing.JButton('Encode', actionPerformed=self.encode)
         self._jButtonDecode = swing.JButton('Decode', actionPerformed=self.decode)
@@ -53,7 +54,23 @@ class BurpExtender(IBurpExtender, ITab):
         self._jPanel.add(self._jTextIn)
         self._jPanel.add(self._jButtonPanel)
         self._jPanel.add(self._jTextOut)
+
+        # SAML Artifact Format
+        self._jTextArtIn = swing.JTextArea("SAML Artifact In", 20,120)
+        self._jTextArtIn.setLineWrap(True)
+        self._jTextArtOut = swing.JTextArea("SAML Artifact Out", 20,120)
+        self._jTextArtOut.setLineWrap(True)
+        self._jButtonArtPanel = swing.JPanel()
+        self._jButtonArtEncode = swing.JButton('Encode', actionPerformed=self.art_encode)
+        self._jButtonArtDecode = swing.JButton('Decode', actionPerformed=self.art_decode)
+        self._jButtonArtPanel.add(self._jButtonArtEncode)
+        self._jButtonArtPanel.add(self._jButtonArtDecode)
+        self._jPanel.add(self._jTextArtIn)
+        self._jPanel.add(self._jButtonArtPanel)
+        self._jPanel.add(self._jTextArtOut)        
+        
         callbacks.customizeUiComponent(self._jPanel)
+
 
         # register ourselves as a message editor tab factory
         callbacks.addSuiteTab(self)
@@ -70,6 +87,37 @@ class BurpExtender(IBurpExtender, ITab):
     #
     def getUiComponent(self):
         return self._jPanel
+
+    def art_decode(self, button):
+        msg = self._jTextArtIn.getText()
+        urldecoded = self._helpers.urlDecode(msg)
+        b64decoded = base64.b64decode(urldecoded)
+        type_code = b64decoded[0:2]
+        endpoint_index = b64decoded[2:4]
+        remaining_artefact = b64decoded[4:]
+
+        art_type = struct.unpack('>H',type_code)[0]
+        if art_type != 4:
+            self._jTextArtOut.setText("Invalid Artifact!")
+            return
+        
+        endpi = struct.unpack('>H',endpoint_index)[0]
+        source_id_sha1 = binascii.hexlify(remaining_artefact[0:20])
+        message_handle = binascii.hexlify(remaining_artefact[20:])
+
+        out = "Artifact Type: %s\n" % art_type
+        out += "Endpoint Index: %s\n" % endpi
+        out += "Source ID (SHA-1): %s\n" % source_id_sha1
+        out += "Message Handle: %s" % message_handle
+
+        if out is None:
+            self._jTextArtOut.setText("Invalid input")
+        else:
+            self._jTextArtOut.setText(out)
+
+    def art_encode(self, button):
+        self._jTextArtIn.setText("Not implemented")
+    
 
     # http://stackoverflow.com/questions/1089662/python-inflate-and-deflate-implementations
     def decode(self, button):
