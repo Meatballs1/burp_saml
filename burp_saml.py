@@ -14,6 +14,7 @@ from burp import IBurpExtenderCallbacks
 from burp import ITab
 
 from javax import swing
+from java import awt
 
 import zlib, base64, re, xml.dom.minidom, struct, binascii
 
