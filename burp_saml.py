@@ -6,7 +6,7 @@
 #
 # Load extension in the Extender tab.
 #
-# Tested in Burpsuite Pro v1.5.14
+# Tested in Burpsuite Pro v1.6beta
 ##
 
 from burp import IBurpExtender
@@ -18,7 +18,7 @@ from javax import swing
 import zlib, base64, re, xml.dom.minidom, struct, binascii
 
 class BurpExtender(IBurpExtender, ITab):
-    
+
     #
     # implement IBurpExtender
     #
@@ -27,13 +27,13 @@ class BurpExtender(IBurpExtender, ITab):
         print "Ben Campbell <eat_meatballs[at]hotmail.co.uk>"
         print "http://rewtdance.blogspot.co.uk"
         print "http://github.com/Meatballs1/burp_saml"
-        
+
         # keep a reference to our callbacks object
         self._callbacks = callbacks
-        
+
         # obtain an extension helpers object
         self._helpers = callbacks.getHelpers()
-        
+
         # set our extension name
         callbacks.setExtensionName("SAML Decoder")
 
@@ -44,33 +44,44 @@ class BurpExtender(IBurpExtender, ITab):
         # SAML Binding Format
         self._jTextIn = swing.JTextArea("SAML Binding In", 20,120)
         self._jTextIn.setLineWrap(True)
+        self._jScrollPaneIn = swing.JScrollPane(self._jTextIn)
+        self._jScrollPaneIn.setVerticalScrollBarPolicy(swing.JScrollPane.VERTICAL_SCROLLBAR_ALWAYS)
+        self._jScrollPaneIn.setPreferredSize(awt.Dimension(20,120))
         self._jTextOut = swing.JTextArea("SAML Binding Out", 20,120)
         self._jTextOut.setLineWrap(True)
+        self._jScrollPaneOut = swing.JScrollPane(self._jTextOut)
+        self._jScrollPaneOut.setVerticalScrollBarPolicy(swing.JScrollPane.VERTICAL_SCROLLBAR_ALWAYS)
+        self._jScrollPaneOut.setPreferredSize(awt.Dimension(20,120))
         self._jButtonPanel = swing.JPanel()
         self._jButtonEncode = swing.JButton('Encode', actionPerformed=self.encode)
         self._jButtonDecode = swing.JButton('Decode', actionPerformed=self.decode)
         self._jButtonPanel.add(self._jButtonEncode)
         self._jButtonPanel.add(self._jButtonDecode)
-        self._jPanel.add(self._jTextIn)
+        self._jPanel.add(self._jScrollPaneIn)
         self._jPanel.add(self._jButtonPanel)
-        self._jPanel.add(self._jTextOut)
+        self._jPanel.add(self._jScrollPaneOut)
 
         # SAML Artifact Format
         self._jTextArtIn = swing.JTextArea("SAML Artifact In", 20,120)
         self._jTextArtIn.setLineWrap(True)
+        self._jScrollPaneArtIn = swing.JScrollPane(self._jTextArtIn)
+        self._jScrollPaneArtIn.setVerticalScrollBarPolicy(swing.JScrollPane.VERTICAL_SCROLLBAR_ALWAYS)
+        self._jScrollPaneArtIn.setPreferredSize(awt.Dimension(20,120))
         self._jTextArtOut = swing.JTextArea("SAML Artifact Out", 20,120)
         self._jTextArtOut.setLineWrap(True)
+        self._jScrollPaneArtOut = swing.JScrollPane(self._jTextArtOut)
+        self._jScrollPaneArtOut.setVerticalScrollBarPolicy(swing.JScrollPane.VERTICAL_SCROLLBAR_ALWAYS)
+        self._jScrollPaneArtOut.setPreferredSize(awt.Dimension(20,120))
         self._jButtonArtPanel = swing.JPanel()
         self._jButtonArtEncode = swing.JButton('Encode', actionPerformed=self.art_encode)
         self._jButtonArtDecode = swing.JButton('Decode', actionPerformed=self.art_decode)
         self._jButtonArtPanel.add(self._jButtonArtEncode)
         self._jButtonArtPanel.add(self._jButtonArtDecode)
-        self._jPanel.add(self._jTextArtIn)
+        self._jPanel.add(self._jScrollPaneArtIn)
         self._jPanel.add(self._jButtonArtPanel)
-        self._jPanel.add(self._jTextArtOut)        
-        
-        callbacks.customizeUiComponent(self._jPanel)
+        self._jPanel.add(self._jScrollPaneArtOut)
 
+        callbacks.customizeUiComponent(self._jPanel)
 
         # register ourselves as a message editor tab factory
         callbacks.addSuiteTab(self)
@@ -100,7 +111,7 @@ class BurpExtender(IBurpExtender, ITab):
         if art_type != 4:
             self._jTextArtOut.setText("Invalid Artifact!")
             return
-        
+
         endpi = struct.unpack('>H',endpoint_index)[0]
         source_id_sha1 = binascii.hexlify(remaining_artefact[0:20])
         message_handle = binascii.hexlify(remaining_artefact[20:])
@@ -117,7 +128,6 @@ class BurpExtender(IBurpExtender, ITab):
 
     def art_encode(self, button):
         self._jTextArtIn.setText("Not implemented")
-    
 
     # http://stackoverflow.com/questions/1089662/python-inflate-and-deflate-implementations
     def decode(self, button):
@@ -142,3 +152,4 @@ class BurpExtender(IBurpExtender, ITab):
             self._jTextIn.setText("Invalid input")
         else:
             self._jTextIn.setText(urlencoded)
+
