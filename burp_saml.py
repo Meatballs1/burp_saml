@@ -16,7 +16,7 @@ from burp import ITab
 from javax import swing
 from java import awt
 
-import zlib, base64, re, xml.dom.minidom, struct, binascii
+import zlib, base64, re, xml.dom.minidom, struct, binascii, xml.sax
 
 class BurpExtender(IBurpExtender, ITab):
 
@@ -136,7 +136,11 @@ class BurpExtender(IBurpExtender, ITab):
         urldecoded = self._helpers.urlDecode(msg)
         b64decoded = base64.b64decode(urldecoded)
         decompressed = zlib.decompress(b64decoded, -15)
-        x = xml.dom.minidom.parseString(decompressed)
+        parser.setFeature("http://xml.org/sax/features/external-general-entities", False)
+        parser.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", False)
+        parser.setFeature("http://xml.org/sax/features/external-parameter-entities", False)
+        parser.setFeature("http://javax.xml.XMLConstants/feature/secure-processing", True)
+        x = xml.dom.minidom.parseString(decompressed, parser)
         xml_pretty = x.toprettyxml(indent='\t')
         if decompressed is None:
             self._jTextOut.setText("Invalid input")
