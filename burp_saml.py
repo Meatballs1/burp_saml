@@ -136,6 +136,7 @@ class BurpExtender(IBurpExtender, ITab):
         urldecoded = self._helpers.urlDecode(msg)
         b64decoded = base64.b64decode(urldecoded)
         decompressed = zlib.decompress(b64decoded, -15)
+        parser = xml.sax.make_parser()
         parser.setFeature("http://xml.org/sax/features/external-general-entities", False)
         parser.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", False)
         parser.setFeature("http://xml.org/sax/features/external-parameter-entities", False)
